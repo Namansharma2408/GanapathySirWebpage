@@ -896,13 +896,11 @@ export default function Home() {
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-16 px-4 relative z-50 ">
         {/* Header Section */}
         <div className="text-center mb-16 max-w-4xl">
-          <h2 className="text-4xl md:text-5xl font-bold italic mb-6 bg-linear-to-r from-purple-700 to-blue-800 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold italic mb-6 bg-linear-to-r from-purple-700 to-blue-800 bg-clip-text text-transparent ">
             Research Interests
           </h2>
-          <p className="text-lg md:text-xl text-gray-700 leading-relaxed">
-            Our research focuses on cutting-edge areas of chemistry that combine
-            sustainability, innovation, and practical applications for solving
-            real-world challenges.
+          <p className="text-lg md:text-xl text-gray-700 leading-relaxed  ">
+            Our research explores cutting-edge areas of chemistry at the intersection of photocatalysis, electrocatalysis, and organic synthesis. By integrating these complementary disciplines, we aim to develop sustainable and efficient catalytic systems for the activation of small molecules and the construction of complex organic frameworks.
           </p>
         </div>
 
