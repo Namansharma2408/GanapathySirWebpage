@@ -130,6 +130,7 @@ const PublicationCard = ({ publication, index }) => {
                       alt={publication.title}
                       width={800} // Fixed width
                       height={500} // Fixed height for 16:10 ratio
+                      style={{ width: "100%", height: "auto" }}
                       className="object-cover rounded"
                     />
                   )}
@@ -142,6 +143,7 @@ const PublicationCard = ({ publication, index }) => {
                       alt={publication.title}
                       width={300} // Smaller fixed width
                       height={200} // Fixed height for consistency
+                      style={{ width: "100%", height: "auto", maxWidth: "300px" }}
                       className="object-cover rounded border"
                     />
                   )}
@@ -249,6 +251,7 @@ const PublicationCard = ({ publication, index }) => {
                         alt={publication.title}
                         width={800} // Fixed width
                         height={400} // Fixed height
+                        style={{ width: "100%", height: "auto" }}
                         className="object-cover rounded border"
                       />
                     )}
@@ -263,6 +266,7 @@ const PublicationCard = ({ publication, index }) => {
                         alt={publication.title}
                         width={200} // Fixed width
                         height={150} // Fixed height
+                        style={{ width: "100%", height: "auto", maxWidth: "200px" }}
                         className="object-cover rounded"
                       />
                     )}
@@ -711,12 +715,7 @@ export default function Home() {
             Research Interests
           </h2>
           <p className="text-lg md:text-xl text-gray-700 leading-relaxed  ">
-            Our research explores cutting-edge areas of chemistry at the
-            intersection of photocatalysis, electrocatalysis, and organic
-            synthesis. By integrating these complementary disciplines, we aim to
-            develop sustainable and efficient catalytic systems for the
-            activation of small molecules and the construction of complex
-            organic frameworks.
+            Our research explores cutting-edge areas of chemistry at the intersection of photocatalysis, electrocatalysis, and organic synthesis. By integrating these complementary disciplines, we aim to develop sustainable and efficient catalytic systems for the activation of small molecules and the construction of complex organic frameworks.
           </p>
         </div>
 

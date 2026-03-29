@@ -60,6 +60,7 @@ const Navbar = () => {
               src="https://res.cloudinary.com/dicnppgsn/image/upload/v1762190240/GDlogo_ago63w.png"
               alt="Ganpathy Research Group Logo"
               fill
+              sizes="40px"
               className="object-cover"
             />
           </div>
@@ -100,6 +101,7 @@ const Navbar = () => {
                   src="https://res.cloudinary.com/dicnppgsn/image/upload/v1762190240/GDlogo_ago63w.png"
                   alt="Ganpathy Research Group Logo"
                   fill
+                  sizes="40px"
                   className="object-cover"
                 />
               </div>
