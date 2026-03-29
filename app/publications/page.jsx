@@ -1,6 +1,7 @@
 "use client"
 import React,{useState,useEffect} from 'react'
 import Image from 'next/image';
+import Papa from "papaparse";
 
 const PublicationCard = ({ publication, index }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -192,43 +193,93 @@ const page = () => {
   const [publications, setPublications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch publications from API
+  // Fetch publications from Google Sheets
   useEffect(() => {
-    setLoading(true);
-    fetch('/api/publications')
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then(errData => {
-            console.warn('Publications API returned error:', errData);
-            return [];
-          }).catch(() => []);
+    const fetchFromGoogleSheets = async () => {
+      setLoading(true);
+      try {
+        // Update this URL to point to your publications CSV
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vSPnZVsvsP1Ecgv-iVWKs_rTGgOCMp68gFDzFBmDE-3SpJZE6UINUrwVZbIjOVoR5SWOublOe1cP1Ui/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch Google Sheets data: ${response.status} ${response.statusText}.`
+          );
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setPublications(data);
-        } else {
-          setPublications([]);
-        }
-      })
-      .catch((err) => {
-        console.warn('Using fallback publications due to API error:', err);
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => {
+            return header.trim();
+          },
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.title && row.title.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                title: row.title?.trim() || "",
+                journal: row.journal?.trim() || "",
+                doi: row.doi?.trim() || "#",
+                mainAuthor: row.mainAuthor?.trim() || "",
+                sideAuthor: row.sideAuthor
+                  ? row.sideAuthor
+                      .replace(/^\[|\]$/g, '')
+                      .split(",")
+                      .map((a) => a.replace(/^["'\s]+|["'\s]+$/g, ''))
+                      .filter(Boolean)
+                  : [],
+                starAuthors: row.starAuthors
+                  ? row.starAuthors
+                      .replace(/^\[|\]$/g, '')
+                      .split(",")
+                      .map((a) => a.replace(/^["'\s]+|["'\s]+$/g, ''))
+                      .filter(Boolean)
+                  : [],
+                image: typeof row.image === "string" && (row.image.trim().startsWith("http") || row.image.trim().startsWith("/")) ? row.image.trim() : "",
+                researchImage: typeof row.researchImage === "string" && (row.researchImage.trim().startsWith("http") || row.researchImage.trim().startsWith("/")) ? row.researchImage.trim() : "",
+              }));
+            setPublications(parsedData);
+          },
+          error: (error) => {
+            console.error("Error parsing CSV:", error);
+            setPublications([]);
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching from Google Sheets:", error);
         setPublications([]);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFromGoogleSheets();
   }, []);
 
 
-  const fallbackPublications = [];
-  // Choose which data to display: fetched or fallback
-  const displayPublications = (publications && publications.length > 0) ? publications : fallbackPublications;
+  // Choose which data to display
+  const displayPublications = publications || [];
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 relative z-10">
           
           {/* Header Section - Academic Style */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-linear-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mt-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-linear-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent mt-[20vh]">
               Publications
             </h1>
             <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto leading-relaxed font-medium">

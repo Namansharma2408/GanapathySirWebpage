@@ -1,9 +1,10 @@
 "use client";
 import Image from "next/image";
 import { useState, useEffect, useMemo } from "react";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper/modules';
-import 'swiper/css';
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
+import "swiper/css";
+import Papa from "papaparse";
 const PublicationCard = ({ publication, index }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -30,18 +31,6 @@ const PublicationCard = ({ publication, index }) => {
                 <p className="text-blue-600 font-medium text-sm">
                   {publication.journal} {publication.year}
                 </p>
-                {publication.volume && (
-                  <p className="text-blue-500 text-xs">
-                    {publication.volume}, {publication.pages}
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                {publication.impactFactor && (
-                  <span className="text-xs text-gray-600">
-                    IF: {publication.impactFactor}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -69,19 +58,63 @@ const PublicationCard = ({ publication, index }) => {
                 {/* Authors */}
                 <div className="mb-4">
                   <p className="text-gray-700 text-sm">
-                    {publication.authors && Array.isArray(publication.authors) ? (
+                    {publication.mainAuthor && (
+                      <span>
+                        {Array.isArray(publication.mainAuthor)
+                          ? publication.mainAuthor.join(", ")
+                          : publication.mainAuthor}
+                      </span>
+                    )}
+                    {publication.sideAuthor &&
+                      publication.sideAuthor.length > 0 && (
+                        <span>
+                          {publication.mainAuthor ? ", " : ""}
+                          {Array.isArray(publication.sideAuthor)
+                            ? publication.sideAuthor.join(", ")
+                            : publication.sideAuthor}
+                        </span>
+                      )}
+                    {publication.starAuthors &&
+                      publication.starAuthors.length > 0 && (
+                        <span>
+                          {publication.mainAuthor ||
+                          (publication.sideAuthor &&
+                            publication.sideAuthor.length > 0)
+                            ? ", "
+                            : ""}
+                          <span className="font-bold">
+                            {Array.isArray(publication.starAuthors)
+                              ? publication.starAuthors.map((author, idx) => (
+                                  <span key={idx}>
+                                    {author}*
+                                    {idx < publication.starAuthors.length - 1
+                                      ? ", "
+                                      : ""}
+                                  </span>
+                                ))
+                              : `${publication.starAuthors}*`}
+                          </span>
+                        </span>
+                      )}
+                    {!publication.mainAuthor &&
+                      publication.authors &&
+                      Array.isArray(publication.authors) &&
                       publication.authors.map((author, idx) => (
                         <span key={idx}>
                           <span
-                            className={author.isCorresponding ? "font-bold" : ""}
+                            className={
+                              author.isCorresponding ? "font-bold" : ""
+                            }
                           >
                             {author.name} {author.isCorresponding ? "*" : ""}
                           </span>
                           {idx < publication.authors.length - 1 && ", "}
                         </span>
-                      ))
-                    ) : (
-                      <span className="text-gray-500 italic">Authors not available</span>
+                      ))}
+                    {!publication.mainAuthor && !publication.authors && (
+                      <span className="text-gray-500 italic">
+                        Authors not available
+                      </span>
                     )}
                   </p>
                 </div>
@@ -91,23 +124,27 @@ const PublicationCard = ({ publication, index }) => {
               <div className="space-y-4 ">
                 {/* Main image - fixed size for consistency */}
                 <div className="w-full flex justify-center ">
-                  <Image
-                    src={publication.image || "/journal.webp"}
-                    alt={publication.title}
-                    width={800} // Fixed width
-                    height={500} // Fixed height for 16:10 ratio
-                    className="object-cover rounded"
-                  />
+                  {publication.image && (
+                    <Image
+                      src={publication.image}
+                      alt={publication.title}
+                      width={800} // Fixed width
+                      height={500} // Fixed height for 16:10 ratio
+                      className="object-cover rounded"
+                    />
+                  )}
                 </div>
                 {/* Research image below - centered and fixed size */}
                 <div className="w-full flex justify-center">
-                  <Image
-                    src={publication.researchImage || "/neeraj.webp"}
-                    alt={publication.title}
-                    width={300} // Smaller fixed width
-                    height={200} // Fixed height for consistency
-                    className="object-cover rounded border"
-                  />
+                  {publication.researchImage && (
+                    <Image
+                      src={publication.researchImage}
+                      alt={publication.title}
+                      width={300} // Smaller fixed width
+                      height={200} // Fixed height for consistency
+                      className="object-cover rounded border"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -139,7 +176,50 @@ const PublicationCard = ({ publication, index }) => {
                     {/* Authors */}
                     <div className="mb-3">
                       <p className="text-gray-700 text-sm">
-                        {publication.authors && Array.isArray(publication.authors) ? (
+                        {publication.mainAuthor && (
+                          <span>
+                            {Array.isArray(publication.mainAuthor)
+                              ? publication.mainAuthor.join(", ")
+                              : publication.mainAuthor}
+                          </span>
+                        )}
+                        {publication.sideAuthor &&
+                          publication.sideAuthor.length > 0 && (
+                            <span>
+                              {publication.mainAuthor ? ", " : ""}
+                              {Array.isArray(publication.sideAuthor)
+                                ? publication.sideAuthor.join(", ")
+                                : publication.sideAuthor}
+                            </span>
+                          )}
+                        {publication.starAuthors &&
+                          publication.starAuthors.length > 0 && (
+                            <span>
+                              {publication.mainAuthor ||
+                              (publication.sideAuthor &&
+                                publication.sideAuthor.length > 0)
+                                ? ", "
+                                : ""}
+                              <span className="font-bold">
+                                {Array.isArray(publication.starAuthors)
+                                  ? publication.starAuthors.map(
+                                      (author, idx) => (
+                                        <span key={idx}>
+                                          {author}*
+                                          {idx <
+                                          publication.starAuthors.length - 1
+                                            ? ", "
+                                            : ""}
+                                        </span>
+                                      ),
+                                    )
+                                  : `${publication.starAuthors}*`}
+                              </span>
+                            </span>
+                          )}
+                        {!publication.mainAuthor &&
+                          publication.authors &&
+                          Array.isArray(publication.authors) &&
                           publication.authors.map((author, idx) => (
                             <span key={idx}>
                               <span
@@ -147,38 +227,45 @@ const PublicationCard = ({ publication, index }) => {
                                   author.isCorresponding ? "font-bold" : ""
                                 }
                               >
-                                {author.name} {author.isCorresponding ? "*" : ""}
+                                {author.name}{" "}
+                                {author.isCorresponding ? "*" : ""}
                               </span>
                               {idx < publication.authors.length - 1 && ", "}
                             </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-500 italic">Authors not available</span>
+                          ))}
+                        {!publication.mainAuthor && !publication.authors && (
+                          <span className="text-gray-500 italic">
+                            Authors not available
+                          </span>
                         )}
                       </p>
                     </div>
                   </div>
                   {/* Image below main content - fixed size */}
                   <div className="w-full flex justify-center mt-4">
-                    <Image
-                      src={publication.image || "/journal.webp"}
-                      alt={publication.title}
-                      width={800} // Fixed width
-                      height={400} // Fixed height
-                      className="object-cover rounded border"
-                    />
+                    {publication.image && (
+                      <Image
+                        src={publication.image}
+                        alt={publication.title}
+                        width={800} // Fixed width
+                        height={400} // Fixed height
+                        className="object-cover rounded border"
+                      />
+                    )}
                   </div>
                 </div>
                 {/* Right 25%: Research image - fixed size and centered */}
                 <div className="w-1/4 flex items-center justify-center">
                   <div className="bg-gray-100 rounded border p-2 flex justify-center">
-                    <Image
-                      src={publication.researchImage || "/neeraj.webp"}
-                      alt={publication.title}
-                      width={200} // Fixed width
-                      height={150} // Fixed height
-                      className="object-cover rounded"
-                    />
+                    {publication.researchImage && (
+                      <Image
+                        src={publication.researchImage}
+                        alt={publication.title}
+                        width={200} // Fixed width
+                        height={150} // Fixed height
+                        className="object-cover rounded"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -214,14 +301,16 @@ const StudentCard = ({ member }) => {
       <div className="relative backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 w-72 sm:w-80 md:w-85 lg:w-95 xl:w-105 2xl:w-120">
         {/* Profile Image */}
         <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 xl:h-85 2xl:h-95 overflow-hidden flex items-center justify-center">
-          <Image
-            src={member?.image || "/neeraj.webp"}
-            alt={member.name}
-            effect="blur"
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-            width="480"
-            height="380"
-          />
+          {member?.image && (
+            <Image
+              src={member.image}
+              alt={member.name}
+              effect="blur"
+              className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+              width="480"
+              height="380"
+            />
+          )}
           {/* Image overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent"></div>
           {/* Role badge */}
@@ -290,29 +379,6 @@ const GlassEffectBg = () => {
 };
 
 // Fallback data moved outside component to avoid React Hook warnings
-const fallbackResearchAreas = [
-  {
-    id: 1,
-    title: "Photocatalysis",
-    image: null,
-    description:
-      "Developing novel photocatalytic systems for sustainable organic synthesis using visible light-responsive catalysts and green chemistry principles.",
-  },
-  {
-    id: 2,
-    title: "Electrocatalysis",
-    image: null,
-    description:
-      "Advancing electrocatalytic methodologies for efficient chemical transformations and energy conversion applications.",
-  },
-  {
-    id: 3,
-    title: "Total Synthesis and Natural Products",
-    image: null,
-    description:
-      "Exploring innovative strategies for the total synthesis of complex natural products and the development of new synthetic methodologies.",
-  },
-];
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -323,543 +389,291 @@ export default function Home() {
 
   // Fetch research interests from API
   useEffect(() => {
-    fetch('/api/researchintrest')
-      .then((res) => {
-        if (!res.ok) {
-          console.warn('Research interests API error, using fallback');
-          return [];
+    const fetchResearchFromSheets = async () => {
+      try {
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6suZlIkrL5zkAnmDTOCQi7wTQJoYSDQ9e5eoim4pQQBsIXB67j7JsahL2jiJhmFhxNd9ixiHj3diC/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch research data");
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setResearchAreas(data);
-        } else {
-          setResearchAreas(fallbackResearchAreas);
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to fetch research interests:', err);
-        setResearchAreas(fallbackResearchAreas);
-      });
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.title && row.title.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                title: row.title?.trim() || "",
+                description: row.description?.trim() || "",
+                image:
+                  typeof row.image === "string" &&
+                  (row.image.trim().startsWith("http") ||
+                    row.image.trim().startsWith("/"))
+                    ? row.image.trim()
+                    : null,
+              }));
+
+            if (parsedData.length > 0) {
+              setResearchAreas(parsedData);
+            }
+          },
+          error: (error) => {
+            console.warn("Failed to parse research interests:", error);
+          },
+        });
+      } catch (err) {
+        console.warn("Failed to fetch research interests:", err);
+      }
+    };
+
+    fetchResearchFromSheets();
   }, []);
 
-  // Fetch publications from API
+  // Fetch publications from Google Sheets
   useEffect(() => {
-    fetch('/api/publications')
-      .then((res) => {
-        if (!res.ok) {
-          console.warn('Publications API error, using fallback');
-          return [];
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setPublications(data);
-        } else {
-          // Use fallback data if API returns empty
-          setPublications(fallbackPublications);
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to fetch publications:', err);
-        setPublications(fallbackPublications);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const fetchPublicationsFromSheets = async () => {
+      try {
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vSPnZVsvsP1Ecgv-iVWKs_rTGgOCMp68gFDzFBmDE-3SpJZE6UINUrwVZbIjOVoR5SWOublOe1cP1Ui/pub?output=csv";
 
-  // Fallback publications data
-  const fallbackPublications = [
-    {
-      id: 1,
-      title:
-        "Visible-Light-Mediated Copper(I)-Catalyzed Regiospecific Amino-Hydroxylation and Amino-Alkoxylation of Vinyl Arenes",
-      journal: "Eur. J. Org. Chem. 2025, 28, 15432-15441. ",
-      year: 2025,
-        volume: "28",
-        pages: "15432-15441",
-        type: "Research Article",
-        status: "Published",
-        impactFactor: "16.383",
-        citations: 23,
-        authors: [
-          { name: "Baldau Singh", isCorresponding: false },
-          { name: "Tiwari Neeraj Brijbhushan", isCorresponding: false },
-          { name: "Krishn Kumar", isCorresponding: false },
-          { name: "Piyush Pandey", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: true },
-        ],
-        abstract:
-          "In this comprehensive study, we present groundbreaking synthetic methodologies toward the aphidicolin family of diterpenoid natural products. Our research demonstrates the development of highly efficient strategies for the construction of complex polycyclic frameworks. These novel approaches exhibit unprecedented selectivity and efficiency in key bond formation reactions under mild conditions.",
-        keywords: [
-          "Natural Products",
-          "Total Synthesis",
-          "Diterpenoids",
-          "Aphidicolin",
-          "Organic Chemistry",
-        ],
-        doi: "e202400996",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "https://chemistry-europe.onlinelibrary.wiley.com/doi/full/10.1002/ejoc.202400996",
-      },
-      {
-        id: 2,
-        title:
-          "Insights into Lead-Free Bismuth-Based Halide Perovskites Toward Alcohol Oxidation Under Blue LED Illumination",
-        journal: "ACS Applied Materials & Interfaces, 2025, 122, e2425438122",
-        year: 2025,
-        volume: "122",
-        pages: "e2425438122",
-        type: "Research Article",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Shalini Joshi", isCorresponding: false },
-          { name: "Baldau Singh", isCorresponding: false },
-          { name: "Deepak Aloysius", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: true },
-          { name: "Satyajit Gupta", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://doi.org/10.1073/pnas.2425438122",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 3,
-        title:
-          "Enantioselective Total Synthesis of the Fungal Metabolite Blennolide D and the Enantiomers of Blennolide E and F",
-        journal: "Org. Lett.2018, 20, 2186-2189",
-        year: 2018,
-        volume: "20",
-        pages: "2186-2189",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Soundararasu Senthilkumar", isCorresponding: false },
-          { name: "Guillermo Valdomir", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: false },
-          { name: "Yun Zhang", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://pubs.acs.org/doi/10.1021/acs.orglett.8b00487",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 4,
-        title:
-          "Enantioselective Total Synthesis of Blennolide H and Phomopsis-H76 A and Determination of Their Structure",
-        journal: "Chem. Eur. J.2018, 24, 8760-8763",
-        year: 2018,
-        volume: "24",
-        pages: "8760-8763",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Guillermo Valdomir", isCorresponding: false },
-          { name: "Soundararasu Senthilkumar", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: false },
-          { name: "Yun Zhang", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 5,
-        title:
-          "Enantioselective Total Synthesis of Chromanone Lactone Homoand Heterodimers",
-        journal: "Chem. Eur. J. 2018, 13, 1888-1891.",
-        year: 2018,
-        volume: "13",
-        pages: "1888-18991",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Guillermo Valdomir", isCorresponding: false },
-          { name: "Soundararasu Senthilkumar", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: false },
-          { name: "Yun Zhang", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: null,
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 6,
-        title:
-          "Enantioselective Total Synthesis and Structure Confirmation of the Natural Dimeric Tetrahydroxanthenone Dicerandrol C",
-        journal: "Chem. Eur. J. 2017, 23, 2299-2302.",
-        year: 2017,
-        volume: "23",
-        pages: "2299-2302",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Dhandapani Ganapathy", isCorresponding: false },
-          { name: "Johannes R. Reiner", isCorresponding: false },
-          { name: "Guillermo Valdomir", isCorresponding: false },
-          { name: "Soundararasu Senthilkumar", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 7,
-        title:
-          "Formal Synthesis of (–)-Siccanin Using an Enantioselective Domino Wacker/Carbonylation/Methoxylation Reaction",
-        journal: "Synlett, 2016, (27(01), 96-100",
-        year: 2016,
-        volume: "27(01)",
-        pages: "96-100",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Lutz F. Tietze", isCorresponding: true },
-          { name: "Stefan Jackenkroll", isCorresponding: false },
-          { name: "Dhandapani Ganapathy", isCorresponding: false },
-          { name: "Johannes R. Reiner", isCorresponding: false },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 8,
-        title: "Enantioselective Total Synthesis of Secalonic Acid E",
-        journal: "Chem. Eur. J. 2015, 21, 16807-16810",
-        year: 2015,
-        volume: "21",
-        pages: "16807-16810",
-        type: "Communication",
-        status: "Published",
-        impactFactor: "11.205",
-        citations: 67,
-        authors: [
-          { name: "Dhandapani Ganapathy", isCorresponding: true },
-          { name: "Johannes R. Reiner", isCorresponding: false },
-          { name: "Lorenz E. Löffler", isCorresponding: false },
-          { name: "Ling Ma", isCorresponding: false },
-          { name: "Boopathy Gnanaprakasam", isCorresponding: false },
-          { name: "Benedikt Niepötter", isCorresponding: false },
-          { name: "Ingo Koehne", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: null,
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 9,
-        title: "Enantioselective Total Synthesis of Secalonic Acid E",
-        journal: "Chem. Eur. J. 2015, 21, 16807-16810",
-        year: 2015,
-        volume: "21",
-        pages: "16807-16810",
-        type: "Communication",
-        status: "/journal.webp",
-        impactFactor: "/neeraj.webp",
-        citations: 67,
-        authors: [
-          { name: "Dhandapani Ganapathy", isCorresponding: true },
-          { name: "Johannes R. Reiner", isCorresponding: false },
-          { name: "Lorenz E. Löffler", isCorresponding: false },
-          { name: "Ling Ma", isCorresponding: false },
-          { name: "Boopathy Gnanaprakasam", isCorresponding: false },
-          { name: "Benedikt Niepötter", isCorresponding: false },
-          { name: "Ingo Koehne", isCorresponding: false },
-          { name: "Lutz F. Tietze", isCorresponding: true },
-        ],
-        abstract:
-          "This work presents the total synthesis and comprehensive biological evaluation of carbamorphine, a novel morphine analog featuring strategic O-to-CH2 replacement in the E-ring. The synthetic approach demonstrates exceptional chemoselectivity and provides access to previously inaccessible structural modifications of the morphine pharmacophore.",
-        keywords: [
-          "Total Synthesis",
-          "Morphine",
-          "Drug Discovery",
-          "Medicinal Chemistry",
-          "Pharmacology",
-        ],
-        doi: "https://chemistry-europe.onlinelibrary.wiley.com/doi/10.1002/chem.201801323",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-      {
-        id: 10,
-        title: "Another Research Publication",
-        journal: "J. Org. Chem. 2024, 89, 1234-1245",
-        year: 2024,
-        volume: "89",
-        pages: "1234-1245",
-        type: "Research Article",
-        status: "Published",
-        impactFactor: "4.335",
-        citations: 15,
-        authors: [
-          { name: "Dhandapani Ganapathy", isCorresponding: true },
-          { name: "Research Team", isCorresponding: false },
-        ],
-        abstract: "Additional research publication to ensure unique IDs.",
-        keywords: ["Organic Chemistry", "Research"],
-        doi: "https://doi.org/10.1021/acs.joc.2024",
-        pdfUrl: "#",
-        supplementaryUrl: "#",
-        image: "/journal.webp",
-        researchImage: "/neeraj.webp",
-        statusColor: "bg-green-100 text-green-700",
-        link: "",
-      },
-    ];
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch publications data");
+        }
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.title && row.title.trim() !== "")
+              .map((row, index) => {
+                let sideAuthor = [];
+                if (row.sideAuthor) {
+                  sideAuthor = row.sideAuthor
+                    .replace(/^\[|\]$/g, "")
+                    .split(",")
+                    .map((a) => a.replace(/^["'\s]+|["'\s]+$/g, "").trim())
+                    .filter(Boolean);
+                }
+
+                let starAuthors = [];
+                if (row.starAuthors) {
+                  starAuthors = row.starAuthors
+                    .replace(/^\[|\]$/g, "")
+                    .split(",")
+                    .map((a) => a.replace(/^["'\s]+|["'\s]+$/g, "").trim())
+                    .filter(Boolean);
+                }
+
+                return {
+                  id: row.$id || row.id || index + 1,
+                  title: row.title?.trim() || "",
+                  journal: row.journal?.trim() || "",
+                  link: row.doi?.trim() || "#",
+                  mainAuthor: row.mainAuthor?.trim() || "",
+                  sideAuthor: sideAuthor,
+                  starAuthors: starAuthors,
+                  year: row.year?.trim() || "",
+                  image:
+                    typeof row.image === "string" &&
+                    (row.image.trim().startsWith("http") ||
+                      row.image.trim().startsWith("/"))
+                      ? row.image.trim()
+                      : "",
+                  researchImage:
+                    typeof row.researchImage === "string" &&
+                    (row.researchImage.trim().startsWith("http") ||
+                      row.researchImage.trim().startsWith("/"))
+                      ? row.researchImage.trim()
+                      : "",
+                };
+              });
+
+            if (parsedData.length > 0) {
+              setPublications(parsedData);
+            }
+          },
+          error: (error) => {
+            console.warn("Failed to parse publications:", error);
+          },
+        });
+      } catch (err) {
+        console.warn("Failed to fetch publications:", err);
+      }
+    };
+
+    fetchPublicationsFromSheets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-slide functionality
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) =>
-        prevIndex === publications.length - 1 ? 0 : prevIndex + 1
+        prevIndex === publications.length - 1 ? 0 : prevIndex + 1,
       );
     }, 3000); // Change slide every 3 seconds
 
     return () => clearInterval(interval);
   }, [publications.length]);
 
-  // Fetch facilities from API
+  // Fetch facilities from Google Sheets
   useEffect(() => {
-    fetch('/api/facilitiesname')
-      .then((res) => {
-        if (!res.ok) {
-          console.warn('Facilities API error, using fallback');
-          return [];
+    const fetchFacilitiesFromSheets = async () => {
+      try {
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQw2MWX1hvt6TrYrf4Gw3_zZi-3rOLf3_UKPbEY0dr3YMwqAaRNsisJsuwXVSXv6b8o9xCKOPetBHKv/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch facilities data");
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setFacilities(data);
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to fetch facilities:', err);
-      });
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.name && row.name.trim() !== "")
+              .map((row, index) => ({
+                id: row.$id || row.id || index + 1,
+                name: row.name?.trim() || "",
+              }));
+
+            if (parsedData.length > 0) {
+              setFacilities(parsedData);
+            }
+          },
+          error: (error) => {
+            console.warn("Failed to parse facilities:", error);
+          },
+        });
+      } catch (err) {
+        console.warn("Failed to fetch facilities:", err);
+      }
+    };
+
+    fetchFacilitiesFromSheets();
   }, []);
 
   // Fallback team members data
-  const fallbackTeamMembers = [
-    {
-      id: 2,
-      name: "Baldau Singh",
-      position: "PhD Student",
-      role: "PhD",
-      department: "Chemistry Department",
-      specialization: "Photocatalytic Organic Synthesis,Total synthesis",
-      image: null,
-      email: "baldaus@iitbhilai.ac.in",
-      linkedin: "",
-      gradientFrom: "from-green-500",
-      gradientTo: "to-teal-600",
-      bsc: "Udai Pratap College, Varanasi, UP",
-      msc: "Udai Pratap College, Varanasi, UP",
-    },
-    {
-      id: 3,
-      name: "Neeraj Tiwari",
-      position: "PhD Student",
-      role: "PhD",
-      department: "Chemistry Department",
-      specialization: "Photocatalytic Organic Synthesis",
-      image: null,
-      email: "neerajbr@iitbhilai.ac.in",
-      bsc: "Veer Narmad South  Gujarat University",
-      msc: "Sardar Patel University",
-      linkedin: "",
-      gradientFrom: "from-blue-500",
-      gradientTo: "to-indigo-600",
-    },
-    {
-      id: 4,
-      name: "Piyush Pandey",
-      position: "PhD Student",
-      role: "PhD",
-      department: "Chemistry Department",
-      specialization: "Electrochemical Organic Synthesis and Total Synthesis",
-      image: null,
-      email: "piyushp@iitbhilai.ac.in",
-      linkedin: "",
-      gradientFrom: "from-blue-500",
-      gradientTo: "to-indigo-600",
-      bsc: "Udai Pratap College, Varanasi, Uttar Pradesh",
-      msc: "Udai Pratap College, Varanasi, Uttar Pradesh",
-    },
-    {
-      id: 5,
-      name: "Nagarajan.S",
-      position: "MSc Student",
-      role: "MSc",
-      department: "Chemistry Department",
-      specialization: "Electrochemical Organic Synthesis",
-      image: null,
-      email: "nagarajanan@iitbhilai.ac.in",
-      linkedin: "",
-      gradientFrom: "from-orange-500",
-      gradientTo: "to-red-600",
-    },
-    {
-      id: 6,
-      name: "Abhijit Pandey",
-      position: "MSc Student",
-      role: "MSc",
-      department: "Chemistry Department",
-      specialization:
-        "Materials Chemistry and Nanotechnology. Working on synthesis of nanomaterials for energy applications.",
-      image: null,
-      email: "abhijitpa@iitbhilai.ac.in",
-      linkedin: "",
-      gradientFrom: "from-indigo-500",
-      gradientTo: "to-purple-600",
-    },
-  ];
 
-  // Fetch team members from API
+  // Fetch team members from Google Sheets
   useEffect(() => {
-    fetch('/api/team')
-      .then((res) => {
-        if (!res.ok) {
-          console.warn('Team API error, using fallback');
-          return [];
+    const fetchTeamFromGoogleSheets = async () => {
+      try {
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQw2MWX1hvt6TrYrf4Gw3_zZi-3rOLf3_UKPbEY0dr3YMwqAaRNsisJsuwXVSXv6b8o9xCKOPetBHKv/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch Google Sheets data for team");
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTeamMembers(data);
-        } else {
-          setTeamMembers(fallbackTeamMembers);
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to fetch team members:', err);
-        setTeamMembers(fallbackTeamMembers);
-      });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim(),
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.name && row.name.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                name: row.name?.trim() || "",
+                position: row.position?.trim() || "",
+                role: row.role?.trim() || "",
+                department: row.department?.trim() || "Chemistry Department",
+                specialization: row.specialization?.trim() || "",
+                image:
+                  typeof row.image === "string" &&
+                  (row.image.trim().startsWith("http") ||
+                    row.image.trim().startsWith("/"))
+                    ? row.image.trim()
+                    : "",
+                email: row.email?.trim() || "",
+                linkedin: row.linkedin?.trim() || "",
+                gradientFrom: row.gradientFrom?.trim() || "from-blue-500",
+                gradientTo: row.gradientTo?.trim() || "to-indigo-600",
+                bsc: row.bsc?.trim() || "",
+                msc: row.msc?.trim() || "",
+              }));
+
+            if (parsedData.length > 0) {
+              setTeamMembers(parsedData);
+            } 
+          },
+          error: (error) => {
+            console.error("Error parsing team CSV:", error);
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching team from Google Sheets:", error);
+      }
+    };
+
+    fetchTeamFromGoogleSheets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const arr = useMemo(
-    () => teamMembers.length > 0 ? teamMembers : fallbackTeamMembers,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [teamMembers]
+    () => (teamMembers),
+    [teamMembers],
   );
   return (
     <div>
@@ -900,7 +714,12 @@ export default function Home() {
             Research Interests
           </h2>
           <p className="text-lg md:text-xl text-gray-700 leading-relaxed  ">
-            Our research explores cutting-edge areas of chemistry at the intersection of photocatalysis, electrocatalysis, and organic synthesis. By integrating these complementary disciplines, we aim to develop sustainable and efficient catalytic systems for the activation of small molecules and the construction of complex organic frameworks.
+            Our research explores cutting-edge areas of chemistry at the
+            intersection of photocatalysis, electrocatalysis, and organic
+            synthesis. By integrating these complementary disciplines, we aim to
+            develop sustainable and efficient catalytic systems for the
+            activation of small molecules and the construction of complex
+            organic frameworks.
           </p>
         </div>
 
@@ -912,13 +731,15 @@ export default function Home() {
               <div className="relative backdrop-blur-xl border bg-white border-white/40 rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 hover:-translate-y-2">
                 {/* Image Section */}
                 <div className="relative h-64 overflow-hidden">
-                  <Image
-                    src={area?.image || "/neeraj.webp"}
-                    alt={area?.title}
-                    effect="blur"
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    fill
-                  />
+                  {area?.image && (
+                    <Image
+                      src={area.image}
+                      alt={area?.title}
+                      effect="blur"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      fill
+                    />
+                  )}
                   <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent"></div>
                 </div>
                 <div className="relative top-4 left-4 right-4">
@@ -993,7 +814,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      
+
       {/* Team Section with Swiper Slider */}
       <div className="relative z-50  py-16 lg:py-24 ">
         {/* Header */}
@@ -1015,7 +836,7 @@ export default function Home() {
           <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 lg:w-32 xl:w-40 bg-linear-to-r from-white/90 via-white/50 to-transparent z-10 pointer-events-none"></div>
           {/* Right fade overlay */}
           <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 lg:w-32 xl:w-40 bg-linear-to-l from-white/90 via-white/50 to-transparent z-10 pointer-events-none"></div>
-          
+
           <div className="px-4 md:px-8 lg:px-12 ">
             <Swiper
               modules={[Autoplay]}
@@ -1045,21 +866,24 @@ export default function Home() {
             >
               {[...arr, ...arr, ...arr, ...arr].map((student, index) =>
                 student.id === 1 ? null : (
-                  <SwiperSlide 
+                  <SwiperSlide
                     key={`${student.$id || student.id}-${index}`}
-                    style={{ width: 'auto' }}
+                    style={{ width: "auto" }}
                     className="flex items-center justify-center  my-12"
                   >
                     <StudentCard member={student} />
                   </SwiperSlide>
-                )
+                ),
               )}
             </Swiper>
           </div>
         </div>
       </div>
-      
-      <div id="trigger" className="w-full  flex flex-col items-center  py-16 px-4 relative z-50 bg-gray-100">
+
+      <div
+        id="trigger"
+        className="w-full  flex flex-col items-center  py-16 px-4 relative z-50 bg-gray-100"
+      >
         {/* Header Section */}
         <div className="text-center mb-12 max-w-4xl">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-linear-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent">
@@ -1073,50 +897,9 @@ export default function Home() {
         {/* Facilities Card */}
         <div className="w-full max-w-4xl mx-auto   p-8 flex flex-col items-center">
           {(() => {
-            // Fallback facilities list
-            const fallbackFacilities = [
-              "NMR 60MHz",
-              "FTIR-ATR",
-              "UV-Vis Spectrometer",
-              "GC-MS",
-              "HPLC",
-              "Elemental Analyzer (CHNS-O)",
-              "BET Analyzer",
-              "CD Spectrophotometer",
-              "Thermogravimetric Analysis",
-              "Differential Scanning Calorimetry",
-              "Size Exclusion Chromatography (GPC)",
-              "Rotary Evaporator",
-              "Photo Reactor",
-              "Microwave Synthesizer",
-              "Hot Air Oven",
-              "Analytical Balance",
-              "Digital pH Meter",
-              "Vortex Mixture",
-              "Centrifuge",
-              "Fume Hood",
-              "Vacuum Pump",
-              "Ultrasonic Cleaner",
-              "Melting Point Apparatus",
-              "Ice Flaking Machine",
-              "Elga Water Purification Systems",
-              "Workstation",
-              "Source Meter",
-              "Micro Plate Reader",
-              "Low Temp. Cooler & Circulator",
-              "Gromacs Software",
-              "PyMol Software",
-              "VMD Software",
-              "AutoDock Software",
-              "Modeller Software",
-            ];
-            
-            // Use fetched facilities if available, otherwise use fallback
             // Extract facility names from fetched data
-            const facilityNames = facilities.length > 0 
-              ? facilities.map(f => f.name || f.title || 'Unknown Facility')
-              : fallbackFacilities;
-            
+            const facilityNames = facilities.map((f) => f.name || f.title || "Unknown Facility");
+
             // Split into 4 columns
             const colLength = Math.ceil(facilityNames.length / 4);
             const columns = [

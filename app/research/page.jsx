@@ -2,6 +2,7 @@
 import React from 'react'
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import Papa from "papaparse";
 const page = () => {
   // const researchAreas = [
   //   {
@@ -9,7 +10,6 @@ const page = () => {
   //     title: "Photocatalysis",
   //     description: "Developing novel photocatalytic systems for sustainable organic synthesis using visible light-responsive catalysts and green chemistry principles.",
   //     features: ["Synthetic Methodology", "Drug Discovery", "Reaction Mechanisms", "Molecular Design"],
-  //     image: "/neeraj.webp",
   //     gradient: "from-gray-300 to-gray-400",
   //     shadow: "shadow-lg shadow-gray-300/50"
   //   },
@@ -18,7 +18,6 @@ const page = () => {
   //     title: "Electrocatalysis",
   //     description: "Advancing electrocatalytic methodologies for efficient chemical transformations and energy conversion applications.",
   //     features: ["Green Chemistry", "Sustainable Processes", "Catalyst Design", "Industrial Applications"],
-  //     image: "/neeraj.webp",
   //     gradient: "from-gray-400 to-gray-500",
   //     shadow: "shadow-lg shadow-gray-400/50"
   //   },
@@ -27,7 +26,6 @@ const page = () => {
   //     title: "Total Synthesis and Natural Products",
   //     description: "Exploring innovative strategies for the total synthesis of complex natural products and the development of new synthetic methodologies.",
   //     features: ["Natural Products", "Complex Molecules", "Synthetic Routes", "Method Development"],
-  //     image: "/neeraj.webp",
   //     gradient: "from-gray-200 to-gray-300",
   //     shadow: "shadow-lg shadow-gray-200/50"
   //   },
@@ -37,30 +35,78 @@ const page = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    fetch("/api/researchintrest")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch research areas`);
+    const fetchFromGoogleSheets = async () => {
+      setLoading(true);
+      try {
+        // You can update this URL to point to your research areas CSV
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6suZlIkrL5zkAnmDTOCQi7wTQJoYSDQ9e5eoim4pQQBsIXB67j7JsahL2jiJhmFhxNd9ixiHj3diC/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch Google Sheets data: ${response.status} ${response.statusText}.`
+          );
         }
-        return res.json();
-      })
-      .then((data) => {
-        // Ensure data is an array before setting state
-        if (Array.isArray(data)) {
-          setresearchAreas(data);
-        } else {
-          console.error("API response is not an array:", data);
-          setresearchAreas([]);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching research areas:", error.message);
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => {
+            return header.trim();
+          },
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.title && row.title.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                title: row.title?.trim() || "",
+                description: row.description?.trim() || "",
+                features: row.features
+                  ? row.features
+                      .replace(/^\[|\]$/g, '')
+                      .split(",")
+                      .map((feature) => {
+                        let cleaned = feature.replace(/^["'\s]+|["'\s]+$/g, '');
+                        // Handle unicode characters sometimes present in CSVs
+                        cleaned = cleaned.replace(/\\u207b/g, '⁻').replace(/\\u00b9/g, '¹').replace(/\\u00b0/g, '°');
+                        cleaned = cleaned.replace(/cm\\u207b\\u00b9/g, 'cm⁻¹');
+                        return cleaned;
+                      })
+                      .filter(Boolean)
+                  : [],
+                image: row.image?.trim() || "",
+                gradient: row.gradient?.trim() || "from-gray-300 to-gray-400",
+                shadow: row.shadow?.trim() || "shadow-lg shadow-gray-300/50",
+              }));
+            setresearchAreas(parsedData);
+          },
+          error: (error) => {
+            console.error("Error parsing CSV:", error);
+            setresearchAreas([]);
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching from Google Sheets:", error);
         setresearchAreas([]);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchFromGoogleSheets();
   }, []);
   return (
     <div className="min-h-screen ">
@@ -127,15 +173,15 @@ const page = () => {
                 {/* Main image container */}
 
                 <div className="h-full rounded-xl overflow-hidden">
-                  <div className='h-full rounded-xl overflow-hidden shadow-2xl'>
-                    <Image
+                  <div className='h-full rounded-xl overflow-hidden shadow-2xl bg-gray-100'>
+                    {area.image && <Image
                       src={area.image}
                       alt={area.title}
                       effect="blur"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 shadow-2xl"
                       style={{ boxShadow: '0 8px 32px 0 rgba(60,60,60,0.25)' }}
                       fill
-                    />
+                    />}
                   </div>
 
                   {/* Floating elements */}

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image';
+import Papa from "papaparse";
 const FacilityCard = ({ facility, index }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -61,10 +62,11 @@ const FacilityCard = ({ facility, index }) => {
           {facility.image && (
             <div className="relative h-48 overflow-hidden rounded-xl mb-4">
               <Image 
-                src={facility.image || "/neeraj.webp"} 
+                src={facility.image} 
                 alt={facility.name}
                 className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
               {/* Image overlay with gradient */}
               <div className={`absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent`}></div>
@@ -90,196 +92,89 @@ const page = () => {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch facilities from API
+  // Fetch facilities from Google Sheets
   useEffect(() => {
-    setLoading(true);
-    fetch('/api/facilities')
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then(errData => {
-            console.warn('Facilities API returned error:', errData);
-            return [];
-          }).catch(() => []);
+    const fetchFromGoogleSheets = async () => {
+      try {
+        const GOOGLE_SHEETS_CSV_URL =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vTN4o_AOl08UFSJSfwREhghbbDjgSPzshPwcsa7xlYpXW8WkgDW2JMtM5PSRFbn4sxovbibg5YXeqJV/pub?output=csv";
+
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
+          cache: "no-store",
+          headers: {
+            Accept: "text/csv,text/plain,*/*",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch Google Sheets data: ${response.status} ${response.statusText}. Make sure the sheet is published to the web.`,
+          );
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setFacilities(data);
-        } else {
-          setFacilities([]);
-        }
-      })
-      .catch((err) => {
-        console.warn('Using fallback facilities due to API error');
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => {
+            return header.trim();
+          },
+          complete: (results) => {
+            if (results.errors && results.errors.length > 0) {
+              console.warn("CSV parsing warnings:", results.errors);
+            }
+
+            const parsedData = results.data
+              .filter((row) => row.name && row.name.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                name: row.name?.trim() || "",
+                category: row.category?.trim() || "",
+                features: row.features
+                  ? row.features
+                      .replace(/^\[|\]$/g, '')
+                      .split(",")
+                      .map((feature) => {
+                        let cleaned = feature.replace(/^["'\s]+|["'\s]+$/g, '');
+                        // Handle unicode characters sometimes present in CSVs
+                        // Replace unicode escapes like u207b and u00b9 with their actual characters
+                        // or just replace the corrupted version directly
+                        cleaned = cleaned.replace(/\\u207b/g, '⁻').replace(/\\u00b9/g, '¹');
+                        cleaned = cleaned.replace(/\\u00b0/g, '°'); // Degree symbol
+                        // Also handle if they show up as string literals cm\u207b\u00b9
+                        cleaned = cleaned.replace(/cm\\u207b\\u00b9/g, 'cm⁻¹');
+                        return cleaned;
+                      })
+                      .filter(Boolean)
+                  : [],
+                capacity: row.capacity?.trim() || "",
+                location: row.location?.trim() || "",
+                status: row.status?.trim() || "Available",
+                icon: row.icon?.trim() || "📊",
+                gradientFrom: row.gradientFrom?.trim() || "from-blue-400",
+                gradientTo: row.gradientTo?.trim() || "to-indigo-500",
+                image: row.image?.trim() || "",
+                route: row.route?.trim() || "",
+              }));
+            setFacilities(parsedData);
+          },
+          error: (error) => {
+            console.error("Error parsing CSV:", error);
+            setFacilities([]);
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching from Google Sheets:", error);
         setFacilities([]);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFromGoogleSheets();
   }, []);
 
-  // Fallback facilities (moved from static list)
-  const fallbackFacilities = [
-    // Analytical Instruments
-    {
-      id: 1,
-      name: "NMR 60MHz",
-      category: "Analytical Instrument",
-      features: ["1H NMR spectroscopy", "13C NMR capability", "Variable temperature", "Automated sample changer"],
-      capacity: "10 samples/day",
-      location: "Building A, Floor 3",
-      status: "Available",
-      icon: "🧲",
-      gradientFrom: "from-blue-400",
-      gradientTo: "to-indigo-500",
-      image: "/nmr.webp",
-      route: "/facilities/nmr-60mhz"
-    },
-    {
-      id: 15,
-      name: "Single Crystal XRD",
-      category: "General Equipment",
-      features: ["Temperature up to 300°C", "Forced air circulation", "Digital controller", "Safety features"],
-      capacity: "Large chamber",
-      location: "All labs",
-      status: "Available",
-      icon: "🔥",
-      gradientFrom: "from-red-400",
-      gradientTo: "to-orange-500",
-      image: "/singleCrystal.webp",
-      route: "/facilities/hot-air-oven"
-    },
-    {
-      id: 2,
-      name: "FTIR-ATR",
-      category: "Analytical Instrument",
-      features: ["Attenuated Total Reflection", "Mid-IR range 4000-400 cm⁻¹", "Diamond crystal", "Minimal sample prep"],
-      capacity: "15 samples/day",
-      location: "Building A, Floor 3",
-      status: "Available",
-      icon: "📊",
-      gradientFrom: "from-purple-400",
-      gradientTo: "to-pink-500",
-      image: "/ftir.webp",
-      route: "/facilities/ftir-atr"
-    },
-    {
-      id: 3,
-      name: "UV-Vis Spectrometer",
-      category: "Analytical Instrument",
-      features: ["190-1100 nm range", "Single & double beam", "Kinetics measurements", "Temperature control"],
-      capacity: "20 samples/day",
-      location: "Building A, Floor 3",
-      status: "Available",
-      icon: "🌈",
-      gradientFrom: "from-cyan-400",
-      gradientTo: "to-blue-500",
-      image: "/uvs.webp",
-      route: "/facilities/uv-vis-spectrometer"
-    },
-    {
-      id: 4,
-      name: "GC-MS",
-      category: "Analytical Instrument",
-      features: ["Gas chromatography-mass spectrometry", "EI & CI ionization", "Library search", "Quantitative analysis"],
-      capacity: "12 samples/day",
-      location: "Building B, Floor 2",
-      status: "Available",
-      icon: "📈",
-      gradientFrom: "from-green-400",
-      gradientTo: "to-teal-500",
-      image: "/gcms.webp",
-      route: "/facilities/gc-ms"
-    },
-    {
-      id: 5,
-      name: "HPLC",
-      category: "Analytical Instrument",
-      features: ["High performance liquid chromatography", "UV-Vis detector", "Multiple column types", "Gradient capability"],
-      capacity: "15 samples/day",
-      location: "Building B, Floor 2",
-      status: "Available",
-      icon: "💧",
-      gradientFrom: "from-blue-400",
-      gradientTo: "to-cyan-500",
-      image: "/hplc.webp",
-      route: "/facilities/hplc"
-    },
-
-
-    // Synthesis & General Equipment
-    {
-      id: 12,
-      name: "Rotary Evaporator",
-      category: "Synthesis Equipment",
-      features: ["Solvent removal", "Temperature control", "Vacuum regulation", "Glass condensers"],
-      capacity: "8 setups",
-      location: "Building C, Floor 2",
-      status: "Available",
-      icon: "🌪️",
-      gradientFrom: "from-orange-400",
-      gradientTo: "to-yellow-500",
-      image: "/rotavapour.webp",
-      route: "/facilities/rotary-evaporator"
-    },
-    {
-      id: 13,
-      name: "Photo Reactor",
-      category: "Synthesis Equipment",
-      features: ["UV-LED light source", "Temperature control", "Gas purging", "Multiple wavelengths"],
-      capacity: "4 reactions",
-      location: "Building C, Floor 2",
-      status: "Available",
-      icon: "💡",
-      gradientFrom: "from-yellow-400",
-      gradientTo: "to-orange-500",
-      image: "/photoreactor.webp",
-      route: "/facilities/photo-reactor"
-    },
-
-    {
-      id: 16,
-      name: "Analytical Balance",
-      category: "General Equipment",
-      features: ["0.1 mg precision", "Internal calibration", "Anti-vibration table", "Data logging"],
-      capacity: "Continuous use",
-      location: "All labs",
-      status: "Available",
-      icon: "⚖️",
-      gradientFrom: "from-gray-400",
-      gradientTo: "to-gray-600",
-      image: "/analyticalBalance.webp",
-      route: "/facilities/analytical-balance"
-    },
-    {
-      id: 22,
-      name: "Ultrasonic Cleaner",
-      category: "General Equipment",
-      features: ["Multiple frequencies", "Digital timer", "Temperature control", "Degassing function"],
-      capacity: "Various sizes",
-      location: "All labs",
-      status: "Available",
-      icon: "🔊",
-      gradientFrom: "from-blue-400",
-      gradientTo: "to-teal-500",
-      image: "/sonikator.webp",
-      route: "/facilities/ultrasonic-cleaner"
-    },
-    {
-      id: 25,
-      name: "Automated Flash Chromatography",
-      category: "Utility Equipment",
-      features: ["Type I ultrapure water", "Online monitoring", "UV sterilization", "Storage tank"],
-      capacity: "30 L/hour",
-      location: "Utility room",
-      status: "Available",
-      icon: "💧",
-      gradientFrom: "from-blue-400",
-      gradientTo: "to-cyan-500",
-      image: "/afc.webp",
-      route: "/facilities/elga-water-purification"
-    },
-
-  ];
   return (
     <div >
       <div className='h-32'/>
@@ -295,7 +190,7 @@ const page = () => {
         </div>
         {/* Facilities Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 ">
-          {((facilities && facilities.length > 0) ? facilities : fallbackFacilities).map((facility, index) => (
+          {(facilities || []).map((facility, index) => (
             <FacilityCard
               key={facility.$id || facility.id || index}
               facility={facility}

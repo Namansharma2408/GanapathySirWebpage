@@ -1,84 +1,101 @@
-"use client"
-import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
-import Masonry from 'react-masonry-css'
+"use client";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import Masonry from "react-masonry-css";
+import Papa from "papaparse";
 
 const Page = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch gallery images from API
+  // Fetch gallery images from Google Sheets CSV
   useEffect(() => {
-    setLoading(true);
-    fetch("/api/gallery")
-      .then((res) => {
-        if (!res.ok) {
-          return res.json().then(errData => {
-            console.warn("Gallery API returned error:", errData);
-            return [];
-          }).catch(() => []);
+    const fetchFromGoogleSheets = async () => {
+      try {
+        setLoading(true);
+        // TODO: Replace this URL with the actual Google Sheet CSV URL you will provide
+        const sheetUrl =
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-6shh7JejH_xcVc7EorS5uPYYpOHRAsVwgz1fDbQa6yvdlhFHupbfAEQIoa8oWOjzuxnTzD0oARQx/pub?output=csv";
+
+        const response = await fetch(sheetUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch Google Sheet data");
         }
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setImages(data);
-        } else {
-          // Use fallback if no data
-          setImages([]);
-        }
-      })
-      .catch((error) => {
-        console.warn("Using fallback gallery data due to API error");
+
+        const csvText = await response.text();
+
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            const parsedData = results.data
+              .filter((row) => row.image && row.image.trim() !== "")
+              .map((row, index) => ({
+                id: row.id || index + 1,
+                image: row.image.trim(),
+                alt: row.alt?.trim() || row.title?.trim() || "",
+                title: row.title?.trim() || "",
+              }));
+
+            setImages(parsedData);
+          },
+          error: (error) => {
+            console.error("PapaParse error:", error);
+            setImages([]);
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching from Google Sheets:", error);
         setImages([]);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchFromGoogleSheets();
   }, []);
 
-  // Fallback data
-  const fallbackImages = Array(16).fill({ src: '/neeraj.webp', alt: 'Gallery Image' });
-
-  // Use fetched data or fallback
-  const displayImages = images.length > 0 ? images : fallbackImages;
-
-  const heightClasses = ['h-64', 'h-80']
+  const heightClasses = ["h-64", "h-80"];
 
   const breakpointColumnsObj = {
     default: 4,
     1100: 3,
     700: 2,
-    500: 1
-  }
+    500: 1,
+  };
 
   // Store random heights in state, only on client
-  const [randomHeights, setRandomHeights] = useState([])
-  const [selectedImage, setSelectedImage] = useState(null)
+  const [randomHeights, setRandomHeights] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    if (displayImages.length > 0) {
-      setRandomHeights(displayImages.map(() => heightClasses[Math.floor(Math.random() * heightClasses.length)]))
+    if (images.length > 0) {
+      setRandomHeights(
+        images.map(
+          () => heightClasses[Math.floor(Math.random() * heightClasses.length)],
+        ),
+      );
     }
-  }, [images.length]) // Only re-run when the number of images changes
+  }, [images.length]); // Only re-run when the number of images changes
 
   const openLightbox = (index) => {
-    setSelectedImage(index)
-  }
+    setSelectedImage(index);
+  };
 
   const closeLightbox = () => {
-    setSelectedImage(null)
-  }
+    setSelectedImage(null);
+  };
 
   return (
     <div>
-      <div className='h-32'/>
+      <div className="h-32" />
       <div className="text-center mb-12 z-20 relative">
         <h1 className="text-4xl md:text-5xl font-bold text-center mb-6 bg-linear-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent ">
           Gallery
         </h1>
         <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto leading-relaxed font-medium">
-          Explore the memories and milestones of our research journey through this curated collection of images.
+          Explore the memories and milestones of our research journey through
+          this curated collection of images.
         </p>
       </div>
 
@@ -93,26 +110,29 @@ const Page = () => {
           className="my-masonry-grid"
           columnClassName="my-masonry-grid_column"
         >
-          {randomHeights.length > 0 && displayImages.map((img, idx) => (
-            <div 
-              key={img.$id || img.id || idx} 
-              className={`relative w-full ${randomHeights[idx]} overflow-hidden rounded-lg mb-4 cursor-pointer hover:opacity-90 transition-opacity`}
-              onClick={() => openLightbox(idx)}
-            >
-              <Image
-                src={img.src || img.image || '/neeraj.webp'}
-                alt={img.alt || img.title || 'Gallery Image'}
-                fill
-                className="object-cover"
-              />
-            </div>
-          ))}
+          {randomHeights.length > 0 &&
+            images.map((img, idx) => (
+              <div
+                key={img.$id || img.id || idx}
+                className={`relative w-full ${randomHeights[idx]} overflow-hidden rounded-lg mb-4 cursor-pointer hover:opacity-90 transition-opacity`}
+                onClick={() => openLightbox(idx)}
+              >
+                {(img.src || img.image) && (
+                  <Image
+                    src={img.src || img.image}
+                    alt={img.alt || img.title || ""}
+                    fill
+                    className="object-cover"
+                  />
+                )}
+              </div>
+            ))}
         </Masonry>
       )}
 
       {/* Lightbox Modal */}
       {selectedImage !== null && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md"
           onClick={closeLightbox}
         >
@@ -138,25 +158,29 @@ const Page = () => {
           </button>
 
           {/* Image Container */}
-          <div 
-            className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center p-4"
-          >
-            <div 
+          <div className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center p-4">
+            <div
               className="relative w-full h-full"
               onClick={(e) => e.stopPropagation()}
             >
-              <Image
-                src={displayImages[selectedImage].src || displayImages[selectedImage].image || '/neeraj.webp'}
-                alt={displayImages[selectedImage].alt || displayImages[selectedImage].title || 'Gallery Image'}
-                fill
-                className="object-contain"
-              />
+              {(images[selectedImage]?.src || images[selectedImage]?.image) && (
+                <Image
+                  src={images[selectedImage].src || images[selectedImage].image}
+                  alt={
+                    images[selectedImage].alt ||
+                    images[selectedImage].title ||
+                    ""
+                  }
+                  fill
+                  className="object-contain"
+                />
+              )}
             </div>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;
