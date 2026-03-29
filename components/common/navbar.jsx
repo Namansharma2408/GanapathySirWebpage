@@ -28,6 +28,7 @@ const Navbar = () => {
                 alt="Ganpathy Research Group Logo"
                 fill
                 sizes="96px"
+                priority
                 className="object-cover"
               />
             </div>
@@ -61,6 +62,7 @@ const Navbar = () => {
               alt="Ganpathy Research Group Logo"
               fill
               sizes="40px"
+              priority
               className="object-cover"
             />
           </div>
@@ -102,6 +104,7 @@ const Navbar = () => {
                   alt="Ganpathy Research Group Logo"
                   fill
                   sizes="40px"
+                  priority
                   className="object-cover"
                 />
               </div>

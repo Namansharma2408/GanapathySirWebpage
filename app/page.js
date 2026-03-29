@@ -123,28 +123,28 @@ const PublicationCard = ({ publication, index }) => {
               {/* Images stacked vertically in mobile */}
               <div className="space-y-4 ">
                 {/* Main image - fixed size for consistency */}
-                <div className="w-full flex justify-center ">
+                <div className="w-full flex justify-center h-64">
                   {publication.image && (
                     <Image
                       src={publication.image}
                       alt={publication.title}
                       width={800} // Fixed width
                       height={500} // Fixed height for 16:10 ratio
-                      style={{ width: "100%", height: "auto" }}
-                      className="object-cover rounded"
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      className="rounded"
                     />
                   )}
                 </div>
                 {/* Research image below - centered and fixed size */}
-                <div className="w-full flex justify-center">
+                <div className="w-full flex justify-center h-48">
                   {publication.researchImage && (
                     <Image
                       src={publication.researchImage}
                       alt={publication.title}
                       width={300} // Smaller fixed width
                       height={200} // Fixed height for consistency
-                      style={{ width: "100%", height: "auto", maxWidth: "300px" }}
-                      className="object-cover rounded border"
+                      style={{ width: "100%", height: "100%", objectFit: "contain", maxWidth: "300px" }}
+                      className="rounded border bg-gray-100 p-2"
                     />
                   )}
                 </div>
@@ -244,30 +244,30 @@ const PublicationCard = ({ publication, index }) => {
                     </div>
                   </div>
                   {/* Image below main content - fixed size */}
-                  <div className="w-full flex justify-center mt-4">
+                  <div className="w-full flex justify-center mt-4 h-64">
                     {publication.image && (
                       <Image
                         src={publication.image}
                         alt={publication.title}
                         width={800} // Fixed width
                         height={400} // Fixed height
-                        style={{ width: "100%", height: "auto" }}
-                        className="object-cover rounded border"
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        className="rounded border bg-white"
                       />
                     )}
                   </div>
                 </div>
                 {/* Right 25%: Research image - fixed size and centered */}
                 <div className="w-1/4 flex items-center justify-center">
-                  <div className="bg-gray-100 rounded border p-2 flex justify-center">
+                  <div className="bg-gray-100 rounded border p-2 flex justify-center w-full max-w-50 h-64">
                     {publication.researchImage && (
                       <Image
                         src={publication.researchImage}
                         alt={publication.title}
                         width={200} // Fixed width
-                        height={150} // Fixed height
-                        style={{ width: "100%", height: "auto", maxWidth: "200px" }}
-                        className="object-cover rounded"
+                        height={256} // Fixed height
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        className="rounded"
                       />
                     )}
                   </div>
@@ -356,13 +356,14 @@ const StudentCard = ({ member }) => {
 };
 const Landingbackground = () => {
   return (
-    <div className="w-full h-screen bg-slate-200 overflow-hidden">
+    <div className="w-full h-screen bg-slate-200 overflow-hidden relative">
       <Image
         src="https://res.cloudinary.com/dicnppgsn/image/upload/v1762187983/landingBackground_rzvvvq.jpg"
         alt="Landing Background"
         effect="blur"
         className="w-full h-full object-cover object-center"
         fill
+        priority
       />
     </div>
   );
@@ -834,44 +835,56 @@ export default function Home() {
           <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 lg:w-32 xl:w-40 bg-linear-to-l from-white/90 via-white/50 to-transparent z-10 pointer-events-none"></div>
 
           <div className="px-4 md:px-8 lg:px-12 ">
-            <Swiper
-              modules={[Autoplay]}
-              spaceBetween={30}
-              slidesPerView="auto"
-              centeredSlides={false}
-              loop={true}
-              speed={6000}
-              allowTouchMove={true}
-              autoplay={{
-                delay: 0,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: false,
-              }}
-              breakpoints={{
-                640: {
-                  spaceBetween: 40,
-                },
-                1024: {
-                  spaceBetween: 50,
-                },
-                1400: {
-                  spaceBetween: 60,
-                },
-              }}
-              className="team-swiper py-24 "
-            >
-              {[...arr, ...arr, ...arr, ...arr].map((student, index) =>
-                student.id === 1 ? null : (
-                  <SwiperSlide
-                    key={`${student.$id || student.id}-${index}`}
-                    style={{ width: "auto" }}
-                    className="flex items-center justify-center  my-12"
-                  >
-                    <StudentCard member={student} />
-                  </SwiperSlide>
-                ),
-              )}
-            </Swiper>
+            {arr.filter(s => s.id !== 1).length > 0 && (
+              <Swiper
+                modules={[Autoplay]}
+                spaceBetween={30}
+                slidesPerView="auto"
+                centeredSlides={false}
+                loop={true}
+                speed={6000}
+                allowTouchMove={true}
+                autoplay={{
+                  delay: 0,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: false,
+                }}
+                breakpoints={{
+                  640: {
+                    spaceBetween: 40,
+                  },
+                  1024: {
+                    spaceBetween: 50,
+                  },
+                  1400: {
+                    spaceBetween: 60,
+                  },
+                }}
+                className="team-swiper py-24 "
+              >
+                {(() => {
+                  const validMembers = arr.filter((s) => s.id !== 1);
+                  
+                  // Ensure we have enough slides to satisfy Swiper's loop requirement on ultra-wide screens
+                  let displayMembers = [];
+                  if (validMembers.length > 0) {
+                    while (displayMembers.length < 15) {
+                      displayMembers = [...displayMembers, ...validMembers];
+                    }
+                  }
+
+                  return displayMembers.map((student, index) => (
+                    <SwiperSlide
+                      key={`${student.$id || student.id}-${index}`}
+                      style={{ width: "auto" }}
+                      className="flex items-center justify-center my-12"
+                    >
+                      <StudentCard member={student} />
+                    </SwiperSlide>
+                  ));
+                })()}
+              </Swiper>
+            )}
           </div>
         </div>
       </div>

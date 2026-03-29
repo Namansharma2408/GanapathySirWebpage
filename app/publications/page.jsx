@@ -91,27 +91,27 @@ const PublicationCard = ({ publication, index }) => {
               <div className="space-y-4 ">
                 {/* Main image - fixed size for consistency */}
                 {publication.image && (
-                  <div className="w-full flex justify-center ">
+                  <div className="w-full flex justify-center h-64">
                     <Image
                       src={publication.image}
                       alt={publication.title || "Publication"}
                       width={800} // Fixed width
                       height={500} // Fixed height for 16:10 ratio
-                      style={{ width: "100%", height: "auto" }}
-                      className="object-cover bg-red-500 rounded"
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                      className="rounded"
                     />
                   </div>
                 )}
                 {/* Research image below - centered and fixed size */}
                 {publication.researchImage && (
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center h-48">
                     <Image
                       src={publication.researchImage}
                       alt={publication.title || "Research"}
                       width={300} // Smaller fixed width
                       height={200} // Fixed height for consistency
-                      style={{ width: "100%", height: "auto", maxWidth: "300px" }}
-                      className="object-cover rounded border"
+                      style={{ width: "100%", height: "100%", objectFit: "contain", maxWidth: "300px" }}
+                      className="rounded border bg-gray-100 p-2"
                     />
                   </div>
                 )}
@@ -177,14 +177,14 @@ const PublicationCard = ({ publication, index }) => {
                   </div>
                   {/* Image below main content - fixed size */}
                   {publication.image && (
-                    <div className="w-full flex justify-center mt-4">
+                    <div className="w-full flex justify-center mt-4 h-64">
                       <Image
                         src={publication.image}
                         alt={publication.title || "Publication"}
                         width={800} // Fixed width
                         height={400} // Fixed height
-                        style={{ width: "100%", height: "auto" }}
-                        className="object-cover rounded border"
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        className="rounded border bg-white"
                       />
                     </div>
                   )}
@@ -192,14 +192,14 @@ const PublicationCard = ({ publication, index }) => {
                 {/* Right 25%: Research image - fixed size and centered */}
                 {publication.researchImage && (
                   <div className="w-1/4 flex items-center justify-center">
-                    <div className="bg-gray-100 rounded border p-2 flex justify-center">
+                    <div className="bg-gray-100 rounded border p-2 flex justify-center w-full max-w-50 h-64">
                       <Image
                         src={publication.researchImage}
                         alt={publication.title || "Research"}
                         width={200} // Fixed width
-                        height={150} // Fixed height
-                        style={{ width: "100%", height: "auto", maxWidth: "200px" }}
-                        className="object-cover rounded"
+                        height={256} // Fixed height
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                        className="rounded"
                       />
                     </div>
                   </div>
