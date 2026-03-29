@@ -611,7 +611,7 @@ export default function Home() {
     const fetchTeamFromGoogleSheets = async () => {
       try {
         const GOOGLE_SHEETS_CSV_URL =
-          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQw2MWX1hvt6TrYrf4Gw3_zZi-3rOLf3_UKPbEY0dr3YMwqAaRNsisJsuwXVSXv6b8o9xCKOPetBHKv/pub?output=csv";
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1VJFnoJ8Pu1SE41-qNcdmYAjx-ePkr1OfvjvplTnJpPsxWoCEvFa4O5dfbLWl-4zHdiRdDc88fSUb/pub?output=csv";
 
         const response = await fetch(GOOGLE_SHEETS_CSV_URL, {
           cache: "no-store",
