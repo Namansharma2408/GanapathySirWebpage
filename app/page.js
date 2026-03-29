@@ -656,7 +656,7 @@ export default function Home() {
 
             if (parsedData.length > 0) {
               setTeamMembers(parsedData);
-            } 
+            }
           },
           error: (error) => {
             console.error("Error parsing team CSV:", error);
@@ -671,10 +671,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const arr = useMemo(
-    () => (teamMembers),
-    [teamMembers],
-  );
+  const arr = useMemo(() => teamMembers, [teamMembers]);
   return (
     <div>
       <div className="absolute inset-0 z-5 pointer-events-none">
@@ -895,32 +892,35 @@ export default function Home() {
           </p>
         </div>
         {/* Facilities Card */}
-        <div className="w-full max-w-4xl mx-auto   p-8 flex flex-col items-center">
+        <div className="w-full max-w-6xl mx-auto p-4 md:p-8 flex flex-col items-center">
           {(() => {
             // Extract facility names from fetched data
-            const facilityNames = facilities.map((f) => f.name || f.title || "Unknown Facility");
+            const facilityNames = facilities.map(
+              (f) => f.name || f.title || "Unknown Facility",
+            );
 
-            // Split into 4 columns
-            const colLength = Math.ceil(facilityNames.length / 4);
+            // Split into 3 columns
+            const colLength = Math.ceil(facilityNames.length / 3);
             const columns = [
               facilityNames.slice(0, colLength),
               facilityNames.slice(colLength, colLength * 2),
-              facilityNames.slice(colLength * 2, colLength * 3),
-              facilityNames.slice(colLength * 3),
+              facilityNames.slice(colLength * 2),
             ];
             return (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-64 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-16 w-full">
                 {columns.map((col, colIdx) => (
-                  <ul key={colIdx} className="space-y-3">
+                  <ul key={colIdx} className="space-y-4">
                     {col.map((facility, idx) => (
                       <li
                         key={facility + idx}
-                        className="text-2xl text-gray-800 font-medium flex items-center"
+                        className="text-lg md:text-xl text-gray-800 font-medium flex items-start"
                       >
-                        <span className="mr-2 text-purple-900 text-xl">
+                        <span className="mr-3 text-purple-900 text-2xl leading-none mt-1">
                           &bull;
                         </span>
-                        {facility}
+                        <span className="text-gray-800">
+                          {facility}
+                        </span>
                       </li>
                     ))}
                   </ul>
